@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Atrapa el cuadrado — Juego de ejemplo de chat gpt</title>
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --accent:#7dd3fc;
+      --muted:#94a3b8;
+      --success:#60a5fa;
+    }
+    html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+    body{
+      background: linear-gradient(180deg, #071022 0%, #0b1422 100%);
+      color:#e6eef8;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+    .wrap{
+      width:980px;
+      max-width:100%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.04);
+      border-radius:14px;
+      padding:20px;
+      box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      gap:18px;
+    }
+    header h1{margin:0;font-size:20px}
+    header p{margin:6px 0 0;color:var(--muted);font-size:13px}
+    .panel{
+      background:rgba(255,255,255,0.02);
+      border-radius:10px;
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      height:100%;
+    }
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+    button{
+      appearance:none;
+      border:0;
+      padding:10px 14px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:600;
+      background:var(--accent);
+      color:#05202b;
+      transition:transform .12s ease;
+    }
+    button:active{transform:scale(.98)}
+    .small{padding:8px 10px;font-size:14px}
+    .info{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .stat{background:rgba(255,255,255,0.03);padding:8px 10px;border-radius:8px;font-weight:700}
+    .arena-wrap{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .arena{
+      background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.008));
+      border-radius:10px;
+      height:420px;
+      position:relative;
+      overflow:hidden;
+      border:1px dashed rgba(255,255,255,0.03);
+    }
+    .target{
+      position:absolute;
+      width:64px;
+      height:64px;
+      border-radius:8px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:800;
+      user-select:none;
+      cursor:pointer;
+      box-shadow: 0 8px 18px rgba(11, 58, 85, 0.45);
+      transition:transform .08s linear;
+    }
+    .hud{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      padding:8px 6px;
+    }
+    .muted{color:var(--muted);font-size:13px}
+    .center{display:flex;align-items:center;justify-content:center}
+    .footer-note{font-size:13px;color:var(--muted)}
+    /* Responsive */
+    @media (max-width:880px){
+      .wrap{grid-template-columns:1fr; padding:12px}
+      .arena{height:360px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap" role="application" aria-label="Juego Atrapa el cuadrado">
+    <div class="panel">
+      <header>
+        <h1>Atrapa el cuadrado (CHATGPT)</h1>
+        <p>Haz clic en el cuadrado que aparece en posiciones aleatorias. Consigue la mayor puntuación posible antes de que termine el tiempo.</p>
+      </header>
+
+      <div class="controls">
+        <button id="startBtn">Iniciar</button>
+        <button id="stopBtn" class="small">Detener</button>
+        <button id="resetBtn" class="small">Reiniciar</button>
+      </div>
+
+      <div class="info">
+        <div class="stat">Puntos: <span id="score">0</span></div>
+        <div class="stat">Tiempo: <span id="time">30</span>s</div>
+        <div class="stat">Objetivo: <span id="hitsGoal">30</span></div>
+      </div>
+
+      <div>
+        <label class="muted">Dificultad</label>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <select id="difficulty" aria-label="Seleccionar dificultad">
+            <option value="easy">Fácil (target lento)</option>
+            <option value="normal" selected>Normal</option>
+            <option value="hard">Difícil (target rápido)</option>
+          </select>
+          <label class="muted" style="margin-left:8px">Tamaño</label>
+          <input id="sizeRange" type="range" min="40" max="110" value="64" />
+        </div>
+      </div>
+
+      <div class="footer-note muted">
+        Consejo: cuanto menor el tamaño y mayor la dificultad, más puntos por segundo puedes obtener.
+      </div>
+    </div>
+
+    <div class="arena-wrap panel">
+      <div class="hud">
+        <div class="muted">Estado: <strong id="state">Detenido</strong></div>
+        <div class="muted">Mejor: <strong id="best">0</strong></div>
+      </div>
+
+      <div class="arena" id="arena" tabindex="0" aria-live="polite" aria-label="Área de juego">
+        <!-- El objetivo aparecerá aquí -->
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="muted">Haz clic sobre el cuadrado para sumar +1 punto.</div>
+        <div class="muted">Proyecto de ejemplo: <strong>Juego</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Variables del juego
+    let score = 0;
+    let timeLeft = 30;
+    let running = false;
+    let intervalId = null;
+    let spawnInterval = 900; // ms entre cambios del target
+    let best = 0;
+
+    const arena = document.getElementById('arena');
+    const scoreEl = document.getElementById('score');
+    const timeEl = document.getElementById('time');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const difficulty = document.getElementById('difficulty');
+    const stateEl = document.getElementById('state');
+    const bestEl = document.getElementById('best');
+    const sizeRange = document.getElementById('sizeRange');
+    const hitsGoal = document.getElementById('hitsGoal');
+
+    // Crea el target (cuadrado)
+    const target = document.createElement('div');
+    target.className = 'target';
+    target.textContent = '';
+    target.style.background = 'linear-gradient(180deg, rgba(125,211,252,0.95), rgba(96,165,250,0.95))';
+    arena.appendChild(target);
+
+    // Posicionar aleatoriamente el target dentro del área
+    function moveTarget() {
+      const aRect = arena.getBoundingClientRect();
+      const size = parseInt(sizeRange.value, 10);
+      const maxX = Math.max(0, aRect.width - size);
+      const maxY = Math.max(0, aRect.height - size);
+      const x = Math.floor(Math.random() * (maxX + 1));
+      const y = Math.floor(Math.random() * (maxY + 1));
+      target.style.width = size + 'px';
+      target.style.height = size + 'px';
+      target.style.left = x + 'px';
+      target.style.top = y + 'px';
+      // Variación ligera en sombra/rotación para dinamismo
+      target.style.transform = 'rotate(' + (Math.random() * 20 - 10) + 'deg)';
+    }
+
+    // Actualizar velocidad según dificultad
+    function applyDifficulty() {
+      const d = difficulty.value;
+      if (d === 'easy') spawnInterval = 1100;
+      else if (d === 'normal') spawnInterval = 800;
+      else spawnInterval = 520;
+      // objetivo meta para mostrar distinto reto
+      if (d === 'easy') hitsGoal.textContent = 20;
+      else if (d === 'normal') hitsGoal.textContent = 30;
+      else hitsGoal.textContent = 45;
+    }
+
+    // Tick del temporizador (1s)
+    function tick() {
+      if (!running) return;
+      timeLeft -= 1;
+      timeEl.textContent = timeLeft;
+      if (timeLeft <= 0) stopGame();
+    }
+
+    // Iniciar juego
+    function startGame() {
+      if (running) return;
+      running = true;
+      stateEl.textContent = 'Jugando';
+      // reset básico si estamos en 0
+      if (timeLeft <= 0) {
+        timeLeft = 30;
+        timeEl.textContent = timeLeft;
+        score = 0;
+        scoreEl.textContent = score;
+      }
+      applyDifficulty();
+      moveTarget();
+      // Cambios periódicos del target
+      intervalId = setInterval(moveTarget, spawnInterval);
+      // Temporizador cada 1s
+      window._timer = setInterval(tick, 1000);
+      // Auto-centrar foco para accesibilidad
+      arena.focus();
+    }
+
+    // Detener juego
+    function stopGame() {
+      running = false;
+      stateEl.textContent = 'Detenido';
+      clearInterval(intervalId);
+      clearInterval(window._timer);
+      intervalId = null;
+      // Guardar mejor
+      if (score > best) {
+        best = score;
+        bestEl.textContent = best;
+      }
+    }
+
+    // Reiniciar
+    function resetGame() {
+      stopGame();
+      score = 0;
+      timeLeft = 30;
+      scoreEl.textContent = score;
+      timeEl.textContent = timeLeft;
+      moveTarget();
+    }
+
+    // Click en target suma puntos y mueve inmediatamente
+    target.addEventListener('click', function (e) {
+      if (!running) return;
+      score += 1;
+      scoreEl.textContent = score;
+      // Pequeña animación de "pop"
+      target.style.transform = 'scale(0.92)';
+      setTimeout(()=> moveTarget(), 80);
+      setTimeout(()=> target.style.transform = 'scale(1)', 140);
+    });
+
+    // Botones
+    startBtn.addEventListener('click', startGame);
+    stopBtn.addEventListener('click', stopGame);
+    resetBtn.addEventListener('click', resetGame);
+
+    // Cambios de configuración en vivo
+    difficulty.addEventListener('change', function() {
+      applyDifficulty();
+      // Si está corriendo, reinicia el intervalo con nueva velocidad
+      if (running) {
+        clearInterval(intervalId);
+        intervalId = setInterval(moveTarget, spawnInterval);
+      }
+    });
+
+    sizeRange.addEventListener('input', function(){
+      // ajusta tamaño del target inmediatamente
+      moveTarget();
+    });
+
+    // Inicialización
+    (function init(){
+      applyDifficulty();
+      moveTarget();
+      scoreEl.textContent = score;
+      timeEl.textContent = timeLeft;
+      bestEl.textContent = best;
+      // Usa localStorage para recordar mejor puntuación
+      const saved = parseInt(localStorage.getItem('atrapa_best')||'0',10);
+      if (saved) { best = saved; bestEl.textContent = best; }
+      // Guardar mejor cada vez que cambia
+      const saveBest = setInterval(()=> {
+        if (best > (parseInt(localStorage.getItem('atrapa_best')||'0',10))) {
+          localStorage.setItem('atrapa_best', best);
+        }
+      }, 2000);
+    })();
+
+    // Al abandonar la página, parar timers
+    window.addEventListener('beforeunload', ()=> {
+      clearInterval(intervalId);
+      clearInterval(window._timer);
+    });
+  </script>
+</body>
+</html>

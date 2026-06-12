@@ -1,0 +1,61 @@
+services:
+  # ---- Reverse proxy: enruta dominios y termina TLS ----
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy:latest
+    container_name: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - certs:/etc/nginx/certs
+      - vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+    networks:
+      - proxy-net
+
+  # ---- Companion: emite y renueva certificados Let's Encrypt ----
+  acme-companion:
+    image: nginxproxy/acme-companion:latest
+    container_name: acme-companion
+    restart: unless-stopped
+    depends_on:
+      - nginx-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - certs:/etc/nginx/certs
+      - vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - acme:/etc/acme.sh
+    environment:
+      # Cambia este correo: Let's Encrypt te avisará si un certificado falla
+      - DEFAULT_EMAIL=alan.g.perez006@gmail.com
+    networks:
+      - proxy-net
+
+  # ---- Tu portafolio (sitio estático servido por Nginx) ----
+  portfolio:
+    image: nginx:alpine
+    container_name: portfolio
+    restart: unless-stopped
+    expose:
+      - "80"
+    volumes:
+      - ./site:/usr/share/nginx/html:ro
+    environment:
+      - VIRTUAL_HOST=alangarciia.duckdns.org
+      - LETSENCRYPT_HOST=alangarciia.duckdns.org
+      - LETSENCRYPT_EMAIL=alan.g.perez006@gmail.com
+    networks:
+      - proxy-net
+
+networks:
+  proxy-net:
+    name: proxy-net
+
+volumes:
+  certs:
+  vhost:
+  html:
+  acme:

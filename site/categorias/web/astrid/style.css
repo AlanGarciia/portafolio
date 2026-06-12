@@ -1,0 +1,124 @@
+body {
+  font-family: 'Arial', sans-serif;
+  margin: 20px;
+  background-color: #121212;
+  color: #fff;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #1db954;
+}
+
+.search-bar {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+input, select, button {
+  padding: 6px;
+  margin-right: 5px;
+  border-radius: 5px;
+  border: none;
+  outline: none;
+  font-size: 0.9em;
+}
+
+input, select {
+  width: 150px;
+}
+
+button {
+  cursor: pointer;
+  background-color: #1db954;
+  color: white;
+}
+
+button:hover {
+  background-color: #17a44b;
+}
+
+#loading {
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.hidden {
+  display: none;
+}
+
+/* Grid de 4 columnas con gap pequeño */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  justify-items: center;
+}
+
+.card {
+  background-color: #1e1e1e;
+  border-radius: 12px;
+  padding: 10px;
+  width: 240px;
+  text-align: center;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.5);
+}
+
+.card img {
+  width: 100%;
+  border-radius: 50%;
+  margin-bottom: 8px;
+}
+
+.card-info {
+  font-size: 0.85em;
+  line-height: 1.3em;
+}
+
+.card-info audio {
+  width: 100%;
+  margin: 5px 0;
+}
+
+.card-info a {
+  color: #1db954;
+  text-decoration: none;
+}
+
+.card-info a:hover {
+  text-decoration: underline;
+}
+
+/* Media queries para responsive */
+@media (max-width: 1200px) {
+  .grid-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .grid-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .grid-container {
+    grid-template-columns: 1fr;
+  }
+  input, select {
+    width: 120px;
+    margin-bottom: 5px;
+  }
+  button {
+    margin-bottom: 5px;
+  }
+}

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+  <html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Astrid 2.0 V.2</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="assets/iconoweb.ico" type="image/x-icon">
+
+</head>
+<body>
+  <h1>Astrid 2.0 V.2</h1>
+
+  <div class="search-bar">
+    <select id="searchType">
+      <option value="artist">Artista</option>
+      <option value="song">Canción</option>
+    </select>
+
+    <input type="text" id="searchInput" placeholder="Escribe tu búsqueda">
+
+    <select id="genreFilter">
+      <option value="">Todos los géneros</option>
+      <option value="Pop">Pop</option>
+      <option value="Rock">Rock</option>
+      <option value="Hip-Hop/Rap">Hip-Hop/Rap</option>
+      <option value="Electronic">Electronic</option>
+      <option value="Jazz">Jazz</option>
+      <option value="Classical">Classical</option>
+    </select>
+
+    <button onclick="search()">Buscar</button>
+  </div>
+
+  <div id="loading" class="hidden">Buscando...</div>
+
+  <div id="resultList" class="grid-container"></div>
+
+  <script>
+  async function search() {
+    const query = document.getElementById('searchInput').value.trim();
+    const genre = document.getElementById('genreFilter').value;
+    const type = document.getElementById('searchType').value;
+    const loading = document.getElementById('loading');
+    const resultList = document.getElementById('resultList');
+
+    resultList.innerHTML = '';
+    loading.classList.remove('hidden');
+
+    let apiUrl;
+
+    if (!query && genre) {
+      // Solo género: buscar canciones populares del género
+      apiUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(genre)}&entity=song&limit=100`;
+    } else if (!query) {
+      alert("Escribe algo para buscar o selecciona un género");
+      loading.classList.add('hidden');
+      return;
+    } else {
+      // Búsqueda normal por artista o canción
+      apiUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=100`;
+    }
+
+    try {
+      const res = await fetch(apiUrl);
+      const data = await res.json();
+      loading.classList.add('hidden');
+
+      if (!data.results || data.results.length === 0) {
+        resultList.innerHTML = '<p>No se encontraron resultados</p>';
+        return;
+      }
+
+      // Filtrar solo tracks con portada
+      let filteredResults = data.results.filter(track => track.artworkUrl100);
+
+      // Filtrar por género si se seleccionó
+      if (genre) {
+        filteredResults = filteredResults.filter(track => track.primaryGenreName === genre);
+      }
+
+      if (filteredResults.length === 0) {
+        resultList.innerHTML = '<p>No se encontraron resultados para ese género</p>';
+        return;
+      }
+
+      // Limitar a 24 resultados
+      filteredResults = filteredResults.slice(0, 24);
+
+      filteredResults.forEach(item => {
+        const card = document.createElement('div');
+        card.className = "card";
+        const artworkUrl = item.artworkUrl100.replace('100x100bb', '400x400bb');
+        card.innerHTML = `
+          <img src="${artworkUrl}" alt="Portada">
+          <div class="card-info">
+            <strong>${item.trackName}</strong><br>
+            ${item.artistName}<br>
+            Género: ${item.primaryGenreName}<br>
+            Duración: ${Math.floor(item.trackTimeMillis / 60000)}:${String(Math.floor((item.trackTimeMillis % 60000) / 1000)).padStart(2,'0')}<br>
+            <audio controls src="${item.previewUrl}"></audio><br>
+            <a href="${item.trackViewUrl}" target="_blank">Ver en iTunes</a>
+          </div>
+        `;
+        resultList.appendChild(card);
+      });
+
+    } catch (err) {
+      loading.classList.add('hidden');
+      alert("Error al buscar, intenta de nuevo");
+      console.error(err);
+    }
+  }
+
+  </script>
+</body>
+</html>
